@@ -1,0 +1,952 @@
+<!doctype>
+<html><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Nils Holgersson platser</title>
+  <meta name="description" content="Karta med platser besökta av Nils Holgersson">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="icon" type="image/x-icon" href="https://cartodb.github.io/odyssey.js/sandbox/favicon.png">
+  <link rel="icon" type="image/png" href="https://cartodb.github.io/odyssey.js/sandbox/favicon.png">
+
+  <link rel="stylesheet" href="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/themes/css/cartodb.css">
+  <link rel="stylesheet" href="https://cartodb.github.io/odyssey.js/sandbox/css/slides.css">
+  <script src="https://cartodb.github.io/odyssey.js/vendor/modernizr-2.6.2.min.js"></script>
+  <style>
+    #slides_container {
+      width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map" style="width: 100%; height: 100%;"></div>
+
+  <div id="slides_container" style="display:block;">
+    <div id="dots"></div>
+
+    <div id="slides"></div>
+
+    <ul id="navButtons">
+      <li><a class="prev"></a></li>
+      <li><a class="next"></a></li>
+    </ul>
+  </div>
+
+  <div id="credits">
+    <span class="title" id="title">Title</span>
+    <span class="author"><strong id="author"><span>
+  </span></span></div>
+
+  <script src="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/cartodb.js"></script>
+  <script src="https://cartodb.github.io/odyssey.js/dist/odyssey.js" charset="UTF-8"></script>
+
+  <script>
+    var resizePID;
+
+    function clearResize() {
+      clearTimeout(resizePID);
+      resizePID = setTimeout(function() { adjustSlides(); }, 100);
+    }
+
+    if (!window.addEventListener) {
+      window.attachEvent("resize", function load(event) {
+        clearResize();
+      });
+    } else {
+      window.addEventListener("resize", function load(event) {
+        clearResize();
+      });
+    }
+
+    function adjustSlides() {
+      var container = document.getElementById("slides_container"),
+          slide = document.querySelectorAll('.selected_slide')[0];
+
+      if (slide) {
+        if (slide.offsetHeight+169+40+80 >= window.innerHeight) {
+          container.style.bottom = "80px";
+
+          var h = container.offsetHeight;
+
+          slide.style.height = h-169+"px";
+          slide.classList.add("scrolled");
+        } else {
+          container.style.bottom = "auto";
+          container.style.minHeight = "0";
+
+          slide.style.height = "auto";
+          slide.classList.remove("scrolled");
+        }
+      }
+    }
+
+    var resizeAction = O.Action(function() {
+      function imageLoaded() {
+        counter--;
+
+        if (counter === 0) {
+          adjustSlides();
+        }
+      }
+      var images = $('img');
+      var counter = images.length;
+
+      images.each(function() {
+        if (this.complete) {
+          imageLoaded.call( this );
+        } else {
+          $(this).one('load', imageLoaded);
+        }
+      });
+    });
+
+    function click(el) {
+      var element = O.Core.getElement(el);
+      var t = O.Trigger();
+
+      // TODO: clean properly
+      function click() {
+        t.trigger();
+      }
+
+      if (element) element.onclick = click;
+
+      return t;
+    }
+
+    O.Template({
+      init: function() {
+        var seq = O.Triggers.Sequential();
+
+        var baseurl = this.baseurl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        var map = this.map = L.map('map').setView([0, 0.0], 4);
+        var basemap = this.basemap = L.tileLayer(baseurl, {
+          attribution: 'Map data &copy; <a href="http://openstreetmap.org/">OpenStreetMap</a> contributors.'
+        }).addTo(map);
+
+        // enanle keys to move
+        O.Keys().on('map').left().then(seq.prev, seq)
+        O.Keys().on('map').right().then(seq.next, seq)
+
+        click(document.querySelectorAll('.next')).then(seq.next, seq)
+        click(document.querySelectorAll('.prev')).then(seq.prev, seq)
+
+        var slides = O.Actions.Slides('slides');
+        var story = O.Story()
+
+        this.story = story;
+        this.seq = seq;
+        this.slides = slides;
+        this.progress = O.UI.DotProgress('dots').count(0);
+      },
+
+      update: function(actions) {
+        var self = this;
+
+        if (!actions.length) return;
+
+        this.story.clear();
+
+        this._resetActions(actions);
+      },
+
+      _resetActions: function(actions) {
+        // update footer title and author
+        var title_ = '<a href="https://www.openstreetmap.org/copyright">Map tiles © OpenStreetMap contributors</a>',
+            author_ = actions.global.author === undefined ? '' : 'By '+actions.global.author;
+
+        document.getElementById('title').innerHTML = title_;
+        document.getElementById('author').innerHTML = author_;
+
+        var sl = actions;
+
+        document.getElementById('slides').innerHTML = ''
+        this.progress.count(sl.length);
+
+        // create new story
+        for(var i = 0; i < sl.length; ++i) {
+          var slide = sl[i];
+          var tmpl = "<div class='slide' style='diplay:none'>";
+
+          tmpl += slide.html();
+          tmpl += "</div>";
+          document.getElementById('slides').innerHTML += tmpl;
+
+          this.progress.step(i).then(this.seq.step(i), this.seq)
+
+          var actions = O.Parallel(
+            this.slides.activate(i),
+            slide(this),
+            this.progress.activate(i),
+            resizeAction
+          );
+
+          actions.on("finish.app", function() {
+            adjustSlides();
+          });
+
+          this.story.addState(
+            this.seq.step(i),
+            actions
+          )
+        }
+
+        this.story.go(this.seq.current());
+      },
+
+      changeSlide: function(n) {
+        this.seq.current(n);
+      }
+    });
+  </script>
+
+  <script type="text/javascript" src="https://fast.fonts.net/jsapi/3af16084-ba56-49ca-b37d-0b49b59e1927.js"></script>
+
+<script id="md_template" type="text/template">```
+-title: "Nils Holgersson platser"
+-author: "Larissa Borck"
+```
+
+# Västra Vemmenhög
+```
+- center: [55.427362, 13.470978]
+- zoom: 14
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F032ykUoC4xFZ%3Fdimension%3D1200x1200)
+
+["Bondgård vid Jordberga", Ferdinand Boberg. Nordiska museet, Public Domain] (http://data.europeana.eu/item/91625/nomu_photo_NMA0088378)
+
+[Chapter 1](http://digital.library.upenn.edu/women/lagerlof/nils/nils.html#I)
+
+[Kapitel 1](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/9/etext)
+
+[Chapter 21 (2nd book)](https://archive.org/details/furtheradventure00lage/page/320/mode/2up)
+
+[Kapitel 54](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/474/etext)
+```
+# Vombsjön
+```
+- center: [55.678376, 13.596734]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fcarlotta.malmo.se%2Fcarlotta-mmus%2Fweb%2Fimage%2Fzoom%2F2390220%2FCM%2B003826.jpg)
+
+["Öveds kloster", Oscar Bladh, 1934. Malmö Museer, CC BY] (http://data.europeana.eu/item/91672/MM_foto_2390217)
+
+[Chapter 2](https://archive.org/stream/wonderfuladventu0018582#page/24/mode/2up)
+
+[Kapitel 2](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/27/etext)
+```
+# Vittskövle
+```
+- center: [55.854196, 14.135317]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0231yTKC91sq%3Fdimension%3D1200x1200)
+
+["Personal vid skylten för Vittskövle station", Eric Lundquist, 1940s. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKBDN01300)
+
+[Chapter 3](https://archive.org/stream/wonderfuladventu0018582#page/44/mode/2up)
+
+[Kapitel 3](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/45/etext)
+
+```
+# Övedskloster
+```
+- center: [55.686336, 13.635751]
+- zoom: 14
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0231ySyb1r58%3Fdimension%3D1200x1200)
+
+["Övedsklosters station", Frans Oscar Ekdahl, 1902. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKBAA06157)
+
+[Chapter 3](https://archive.org/stream/wonderfuladventu0018582#page/44/mode/2up)
+
+[Kapitel 3](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/45/etext)
+```
+# Glimmingehus
+```
+- center: [55.501575, 14.23096]
+- zoom: 15
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fsokisamlingar.sormlandsmuseum.se%2Ffiles%2Foriginal%2F2ac119655369ee23b7f83bc82b98bb88.jpg)
+
+["Akvarellmålning av Glimmingehus från gårdssidan", 1911. Sörmlands museum, CC BY-SA] (http://data.europeana.eu/item/916123/SLM_item_274776)
+
+[Chapter 4](https://archive.org/stream/wonderfuladventu0018582#page/69/mode/2up)
+
+[Kapitel 4](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/66/etext)
+```
+# Kullaberg
+```
+- center: [56.301364, 12.457434]
+- zoom: 13
+```
+![](https://api.europeana.eu/thumbnail/v2/url.json?uri=http%3A%2F%2Fnationalmuseumse.iiifhosting.com%2Fiiif%2F50b5388194e09a860088fe8853a0fa724460d8316c5c982cfd550a5bec6eb1f4%2Ffull%2Ffull%2F0%2Fdefault.jpg&type=IMAGE)
+
+["Bark Beating to Windward at Kullaberg", Marcus Larson, 1849. Nationalmuseum, Public Domain] (http://data.europeana.eu/item/2064116/Museu_ProvidedCHO_Nationalmuseum__Sweden_21835)
+
+[Chapter 5](https://archive.org/stream/wonderfuladventu0018582#page/84/mode/2up)
+
+[Kapitel 5](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/80/etext)
+```
+# Ovesholms slott
+```
+- center: [56.000505, 14.001807]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fcarlotta.malmo.se%2Fcarlotta-mmus%2Fweb%2Fimage%2Fzoom%2F1001332%2FBJ%2B003374.jpg)
+
+["Ovesholms slott vid Araslövsjön", Berndt Johnsson. Malmö Museer, CC BY] (http://data.europeana.eu/item/91672/MM_foto_606051)
+
+[Chapter 6](https://archive.org/stream/wonderfuladventu0018582#page/96/mode/2up)
+
+[Kapitel 6](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/90/etext)
+```
+# Kristianstad
+```
+- center: [56.029394, 14.156678]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTYHDguq%3Fdimension%3D1200x1200)
+
+["Vy över Kristianstad med järnväg och Hammarsjön i bild", 1951. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC04431)
+
+[Chapter 6](https://archive.org/stream/wonderfuladventu0018582#page/96/mode/2up)
+
+[Kapitel 6](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/90/etext)
+```
+# Bäckaskog Slott
+```
+- center: [56.085386, 14.349406]
+- zoom: 14
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fwww.bebyggelseregistret.raa.se%2Fbbr2%2Fshow%2Fbilaga%2FshowFoto.raa%3FfotoId%3D21500001338254%26thumbnail%3Dfalse)
+
+["Bäckaskogs Slott", Bengt A Lundberg, 2007. Riksantikvarieämbetet, CC BY] (http://data.europeana.eu/item/90/raa_bbr_21400000357321)
+
+[Chapter 6](https://archive.org/stream/wonderfuladventu0018582#page/96/mode/2up)
+
+[Kapitel 6](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/90/etext)
+```
+# Ryssberget
+```
+- center: [56.067356, 14.592428]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fblm.kulturhotell.se%2Ffiles%2Foriginal%2F3ff0bf54cfbe9b46fc3f0ebf7e93fa1e.jpg)
+
+["Äppelträdsodling med Ryssberget i bakgrunden", Elias Martin. Blekinge museum, Public Domain] (http://data.europeana.eu/item/916119/blm_item_88133)
+
+[Chapter 6](https://archive.org/stream/wonderfuladventu0018582#page/96/mode/2up)
+
+[Kapitel 6](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/90/etext)
+
+```
+# Ronneby
+```
+- center: [56.210434, 15.276023]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16001000020532%2Fnormal%2F1.jpg)
+
+["Ronneby vattenfall", Åke Nyberg. Riksantikvarieämbetet, Public Domain] (http://data.europeana.eu/item/91622/raa_kmb_16001000020532)
+
+[Chapter 8](https://archive.org/stream/wonderfuladventu0018582#page/110/mode/2up)
+
+[Kapitel 8](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/102/etext)
+```
+# Karlskrona
+```
+- center: [56.161224, 15.5869]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022ymyfix8nU%3Fdimension%3D1200x1200)
+
+["Skeppsvarv i Karlskrona ca 1780", Lorenz Wilhelm Brandenburg. Sjöhistoriska museet, Public Domain] (http://data.europeana.eu/item/916109/smm_sm_object_O04138)
+
+[Chapter 9](https://archive.org/stream/wonderfuladventu0018582#page/122/mode/2up)
+
+[Kapitel 9](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/112/etext)
+```
+# Kalmarsund
+```
+- center: [56.591062, 16.330688]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F022wZW2zuC5r%3Fdimension%3D1200x1200)
+
+["Yttre Stengrund i Kalmarsund 1906". Tekniska museet, Public Domain] (http://data.europeana.eu/item/916118/S_TEK_photo_TEKA0079495)
+
+[Chapter 10](https://archive.org/stream/wonderfuladventu0018582#page/133/mode/2up)
+
+[Kapitel 10](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/122/etext)
+```
+# Ottenby
+```
+- center: [56.238075, 16.452895]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2F0%2F06%2FL%25C3%25A5nge_Jan_fyr_%25C3%2585s_socken.jpg)
+
+["Långe Jan fyr Ås socken", Arkland, 2013. Wikimedia Commons Community, CC BY-SA] (http://data.europeana.eu/item/2058704/File_L_C3_A5nge_Jan_fyr__C3_85s_socken_jpg)
+
+[Chapter 11](https://archive.org/stream/wonderfuladventu0018582#page/139/mode/2up)
+
+[Kapitel 11](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/127/etext)
+```
+# Stora Alvaret
+```
+- center: [56.466553, 16.558679]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16001000040184%2Fnormal%2F1.jpg)
+
+["Tingstad flisor", Bengt A Lundberg, 2008. Riksantikvarieämbetet, CC BY] (http://data.europeana.eu/item/91622/raa_kmb_16001000040184)
+
+[Chapter 12](https://archive.org/stream/wonderfuladventu0018582#page/149/mode/2up)
+
+[Kapitel 12](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/136/etext)
+```
+# Borgholms Slott
+```
+- center: [56.87054, 16.64346]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022wZ13HJCk1%3Fdimension%3D1200x1200)
+
+["Kolonien Borgholm. Karl Hedström och tre kvinnor vid Borgholms slottsruin", Anna Wilhelmina Hedström, 1920. Örebro läns museum, Public Domain] (http://data.europeana.eu/item/916121/S_OLM_photo_OLM_2008_21_813)
+
+[Chapter 12](https://archive.org/stream/wonderfuladventu0018582#page/149/mode/2up)
+
+[Kapitel 12](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/136/etext)
+```
+# Lilla Karlsö
+```
+- center: [57.312591, 18.063184]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F032wX1rHzgF5%3Fdimension%3D1200x1200)
+
+["Vy över strand med klippa", Oskar Halldin. Göteborgs naturhistoriska museum, CC BY] (http://data.europeana.eu/item/52/gnm_photo_GNM4832_001)
+
+[Chapter 13](https://archive.org/stream/wonderfuladventu0018582#page/154/mode/2up)
+
+[Kapitel 13](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/141/etext)
+```
+# Visby
+```
+- center: [57.6348, 18.29484]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16000200028727%2Fnormal%2F1.jpg)
+
+["Visby domkyrka (Sankta Maria kyrka)", Olivia Wittberg. Riksantikvarieämbetet, Public Domain] (http://data.europeana.eu/item/91622/raa_kmb_16000200028727)
+
+[Chapter 14](https://archive.org/stream/wonderfuladventu0018582#page/169/mode/2up)
+
+[Kapitel 14](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/154/etext)
+```
+# Tjust
+```
+- center: [57.757716, 16.636976]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&amp;type=IMAGE&amp;uri=http%3A%2F%2Fnationalmuseumse.iiifhosting.com%2Fiiif%2F32d46b793b1e7d1474005f07d47774618096784f52690975976531dd8bd46de3%2Ffull%2Ffull%2F0%2Fdefault.jpg)
+
+["Towards Evening. Horsö in the Tjust archipelago", Gottfrid Kallstenius, 1932. Nationalmuseum, Public Domain] (http://data.europeana.eu/item/2064116/Museu_ProvidedCHO_Nationalmuseum__Sweden_20239)
+
+[Chapter 15](https://archive.org/stream/wonderfuladventu0018582#page/184/mode/2up)
+
+[Kapitel 15](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/167/etext)
+```
+# Sunnerbo härad
+```
+- center: [56.833877, 13.941042]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmedia35a.dimu.no%2Fmedia%2Fdecoimage%2FS-NM%2FNMA.0040034%2F74921%3Fsize%3D800)
+
+["En kvinna poserar i en dräkt från Sunnerbo härad, Småland", Hélène Edlund, 1880-1907. Nordiska museet, Public Domain] (http://data.europeana.eu/item/2048211/europeana_fashion_NMA_0040034)
+
+[Chapter 16](https://archive.org/stream/wonderfuladventu0018582#page/191/mode/2up)
+
+[Kapitel 16](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/173/etext)
+```
+# Taberg
+```
+- center: [57.679421, 14.080703]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTzXoyPh%3Fdimension%3D1200x1200)
+
+["Översikt över Smålands Taberg", 1906-1935. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKDAA12913)
+
+[Chapter 18](https://archive.org/stream/wonderfuladventu0018582#page/226/mode/2up)
+
+[Kapitel 18](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/205/etext)
+```
+# Jönköping
+```
+- center: [57.782614, 14.161788]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F03346xaQWLpC%3Fdimension%3D1200x1200)
+
+["Kungsgatan i Jönköping år 1902", Jönköpings Litografiska AB, 1902. Jönköpings läns museum, Public Domain] (http://data.europeana.eu/item/91694/JM_photo_JM1988_2_2173)
+
+[Chapter 18](https://archive.org/stream/wonderfuladventu0018582#page/226/mode/2up)
+
+[Kapitel 18](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/205/etext)
+```
+# Huskvarna
+```
+- center: [57.790414, 14.275578]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F02348T7SAJ5m%3Fdimension%3D1200x1200)
+
+["Vy över Huskvarna mot väster". Jönköpings läns museum, Public Domain] (http://data.europeana.eu/item/91694/JM_photo_JM1987_2_203)
+
+[Chapter 18](https://archive.org/stream/wonderfuladventu0018582#page/226/mode/2up)
+
+[Kapitel 18](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/205/etext)
+```
+# Tåkern
+```
+- center: [58.353267, 14.827608]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F012uNXAHeuGS%3Fdimension%3D1200x1200)
+
+["Tåkern i bakgrunden, 16 maj 1917", Paul Rosenius, 1917. Vänersborgs museum, Public Domain] (http://data.europeana.eu/item/916106/vbg_photo_VMPRB3339)
+
+[Chapter 19](https://archive.org/stream/wonderfuladventu0018582#page/231/mode/2up)
+
+[Kapitel 19](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/210/etext)
+```
+# Omberg
+```
+- center: [58.333333, 14.65]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F022wZVowKBSv%3Fdimension%3D1200x1200)
+
+["Vy över Omberg", John Hertzberg, 1913. Tekniska museet, Public Domain] (http://data.europeana.eu/item/916118/S_TEK_photo_TEKA0154607)
+
+[Chapter 19](https://archive.org/stream/wonderfuladventu0018582#page/231/mode/2up)
+
+[Kapitel 19](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/210/etext)
+```
+# Vadstena Kloster
+```
+- center: [58.450805, 14.891354]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F012uP23TjPws%3Fdimension%3D1200x1200)
+
+["Vadstena i äldre tider efter Dahlbergs Suecia Antiqua". Sjöhistoriska museet, CC BY-SA] (http://data.europeana.eu/item/916109/smm_sm_photo_Fo200927)
+
+[Chapter 20](https://archive.org/stream/wonderfuladventu0018582#page/250/mode/2up)
+
+[Kapitel 20](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/227/etext)
+```
+# Norrköping
+```
+- center: [58.587745, 16.192421]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F042sB3WjzjAR%3Fdimension%3D1200x1200)
+
+["Hamnen", Henry Thorburn, 1897. Bohusläns museum, Public Domain] (http://data.europeana.eu/item/916105/bhm_photo_UMFA54380_0171)
+
+[Kapitel 21](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson1/sida/233/etext)
+```
+# Kolmården
+```
+- center: [58.660537, 16.399033]
+- zoom: 12
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fsokisamlingar.sormlandsmuseum.se%2Ffiles%2Foriginal%2F7143cb49d97597df64a605bd447d8caf.JPG)
+
+["Kilaån i Bergshammar", 1953. Sörmlands museum, CC BY-SA] (http://data.europeana.eu/item/916123/SLM_item_403389)
+
+[Chapter 1 (2nd book)](https://archive.org/details/furtheradventure00lage/page/n15/mode/2up)
+
+[Kapitel 22](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/1/etext)
+```
+# Örebro
+```
+- center: [59.275263, 15.213411]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022wYWVdrufe%3Fdimension%3D1200x1200)
+
+["Örebro slott", Anders Andersson, 1955-1967. Örebro läns museum, Public Domain] (http://data.europeana.eu/item/916121/S_OLM_photo_OLM_949798_1)
+
+[Chapter 2 (2nd book)](https://archive.org/details/furtheradventure00lage/page/50/mode/2up)
+
+[Kapitel 24](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/60/etext)
+```
+# Hjälmaren
+```
+- center: [59.25, 15.75]
+- zoom: 12
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTemoDXf%3Fdimension%3D1200x1200)
+
+[""Örebro II" på Hjälmaren vid Läppe", 1940s. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC12715)
+
+[Chapter 3 (2nd book)](https://archive.org/details/furtheradventure00lage/page/72/mode/2up)
+
+[Kapitel 25](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/83/etext)
+```
+# Mälaren
+```
+- center: [59.446679, 17.466347]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0231yTYHE2KK%3Fdimension%3D1200x1200)
+
+["Kvicksundsbron och norra delen av Kvicksund som ligger på Nyckelön i Mälaren", 1948. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC04519)
+
+[Chapter 5/6 (2nd book)](https://archive.org/details/furtheradventure00lage/page/101/mode/2up)
+
+[Kapitel 26](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/88/etext)
+```
+# Fellingsbro
+```
+- center: [59.433698, 15.591502]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTYFhgjs%3Fdimension%3D1200x1200)
+
+["Fellingsbro station", 1900. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC02817)
+
+[Kapitel 26](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/88/etext)
+```
+# Bergslagen
+```
+- center: [59.594349, 15.228221]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkokoelmat.fng.fi%2Fapp%3Fprofile%3Deuropeana%26iid%3DA0152900%26action%3Dimage)
+
+["Sommarnatt i Bergslagen", Olof Arborelius, 1899. Finnish National Gallery, CC0] (http://data.europeana.eu/item/2021012/app_si_A_I_731)
+
+[Kapitel 27](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/93/etext)
+
+[Kapitel 28](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/103/etext)
+```
+# Dalälven
+```
+- center: [60.60097, 17.447487]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F0331vyTxzkqu%3Fdimension%3D1200x1200)
+
+["Järnvägsbron över Dalälven vid Domnarvet". Tekniska museet, Public Domain] (http://data.europeana.eu/item/916118/S_TEK_photo_TEKA0164461)
+
+[Kapitel 29](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/120/etext)
+```
+# Falu Gruva
+```
+- center: [60.600216, 15.616582]
+- zoom: 12
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0231yTYQdxsz%3Fdimension%3D1200x1200)
+
+["Falu koppargruva", 1940s. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC09591)
+
+[Kapitel 30](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/132/etext)
+```
+# Rättvik
+```
+- center: [60.889025, 15.123373]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTYCnQ79%3Fdimension%3D1200x1200)
+
+["Siljan vid Rättvik med Ångbåtsbryggan", 1940s. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC01594)
+
+[Kapitel 31](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/151/etext)
+```
+# Uppsala
+```
+- center: [59.858564, 17.638927]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F032yiUvzaSGp%3Fdimension%3D1200x1200)
+
+["Uppsala universitet", Anders Larsson, 1890-1910. Länsmuseet Gävleborg, Public Domain] (http://data.europeana.eu/item/916124/S_XLM_photo_XLMEE224)
+
+[Kapitel 35](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/187/etext)
+```
+# Stockholm Archipelago
+```
+- center: [59.2844, 18.57459]
+- zoom: 12
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F032yhzGq7dtA%3Fdimension%3D1200x1200)
+
+["Lumières-autokrom. Utö, Stockholms skärgård", John Jäderström, 1910. Tekniska museet, Public Domain] (http://data.europeana.eu/item/916118/S_TEK_photo_TEKA0024049)
+
+[Chapter 6 (2nd book)](https://en.wikipedia.org/wiki/The_Wonderful_Adventures_of_Nils#cite_note-30)
+
+[Kapitel 36](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/208/etext)
+```
+# Stockholm & Skansen 
+```
+- center: [59.324016, 18.101636]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&amp;type=IMAGE&uri=http%3A%2F%2Fnationalmuseumse.iiifhosting.com%2Fiiif%2F7c88628b35c927850f382dc782742af35acc6108bbc97f98f8b6ee60d0810c90%2Ffull%2Ffull%2F0%2Fdefault.jpg)
+
+["View of Stockholm from Skansen", Karl Nordström, 1889. Nationalmuseum, Public Domain] (http://data.europeana.eu/item/2064116/Museu_ProvidedCHO_Nationalmuseum__Sweden_18896)
+
+[Chapter 7 (2nd book)](https://archive.org/details/furtheradventure00lage/page/133/mode/2up)
+
+[Kapitel 37](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/225/etext)
+```
+# Älvkarleby
+```
+- center: [60.568607, 17.448913]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&amp;type=IMAGE&uri=http%3A%2F%2Fnationalmuseumse.iiifhosting.com%2Fiiif%2Fdfa48179483f7b910e88c6eac78d5f782013db95164ee118154cf43dbbeb0485%2Ffull%2Ffull%2F0%2Fdefault.jpg)
+
+["A Waterfall, Älvkarleby", Carl Johan Fahlcrantz. Nationalmuseum, Public Domain] (http://data.europeana.eu/item/2064116/Museu_ProvidedCHO_Nationalmuseum__Sweden_21818)
+
+[Chapter 9 (2nd book)](https://archive.org/details/furtheradventure00lage/page/171/mode/2up)
+
+[Kapitel 39](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/258/etext)
+```
+# Delsbo
+```
+- center: [61.799132, 16.553382]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0231yTYEF3Tn%3Fdimension%3D1200x1200)
+
+["Vy över Delsbo med järnvägsstationen", Oscar Bladh. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKCAC02203)
+
+[Kapitel 10 (2nd book)](https://archive.org/details/furtheradventure00lage/page/181/mode/2up)
+
+[Chapter 40](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/270/etext)
+```
+# Sundsvall
+```
+- center: [62.390811, 17.306927]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F02348xDoGkYg%3Fdimension%3D600x600)
+
+["Vykort med motiv över Vängåvan och Stora torget i Sundsvall", 1899-1909. Sundsvalls museum, CC0] (http://data.europeana.eu/item/91698/sm_photo_SuM_foto031797)
+
+[Chapter 11 (2nd book)](https://archive.org/details/furtheradventure00lage/page/201/mode/2up)
+
+[Kapitel 41](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/287/etext)
+```
+# Alnön
+```
+- center: [62.403517, 17.460407]
+- zoom: 12
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F022wZVhHsQU8%3Fdimension%3D1200x1200)
+
+["Nacka Sågverk, vid Klingefjärden, Alnön, Medelpad", N. G. Nilsson, 1899-1909. Tekniska museet, Public Domain] (http://data.europeana.eu/item/916118/S_TEK_photo_TEKA0122181)
+
+[Chapter 11 (2nd book)](https://archive.org/details/furtheradventure00lage/page/201/mode/2up)
+
+[Kapitel 41](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/287/etext)
+```
+# Ångermanland
+```
+- center: [62.634211, 17.944589]
+- zoom: 10
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022sBY4HUPZ6%3Fdimension%3D1200x1200)
+
+["Nässeforsen i Faxälven, Ångermanland", 1912. Bohusläns museum, Public Domain] (http://data.europeana.eu/item/916105/bhm_photo_UMFA54672_0554)
+
+[Chapter 12 (2nd book)](https://archive.org/details/furtheradventure00lage/page/210/mode/2up)
+
+[Chapter 42](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/298/etext)
+```
+# Västerbotten & Lapland
+```
+- center: [65.333731, 16.516169]
+- zoom: 7
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022ykUoC5Hxq%3Fdimension%3D1200x1200)
+
+["Västerbotten, Burträsk", Ferdinand Boberg, 1924. Nordiska museet, Public Domain] (http://data.europeana.eu/item/91625/nomu_photo_NMA0088516)
+
+[Chapter 13 (2nd book)](https://archive.org/details/furtheradventure00lage/page/221/mode/2up)
+
+[Kapitel 43](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/310/etext)
+```
+# Malmberget
+```
+- center: [67.173653, 20.654516]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTt4j7UW%3Fdimension%3D1200x1200)
+
+["Malmberget vid Gällivare", Petrus Melander, 1900-1909. Järnvägsmuseet, Public Domain] (http://data.europeana.eu/item/154/S_JVM_photo_JvmKDAA05885)
+
+[Chapter 14 (2nd book)](https://archive.org/details/furtheradventure00lage/page/241/mode/2up)
+
+[Kapitel 44](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/331/etext)
+```
+# Kiruna
+```
+- center: [67.8558, 20.225282]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16001000407064%2Fnormal%2F1.jpg)
+
+["Kiruna", C. O. Lundberg, 1920-1949. Riksantikvarieämbetet, Public Domain] (http://data.europeana.eu/item/91622/raa_kmb_16001000407064)
+
+[Chapter 15 (2nd book)](https://archive.org/details/furtheradventure00lage/page/253/mode/2up)
+
+[Kapitel 45](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/351/etext)
+```
+# Östersund
+```
+- center: [63.176683, 14.636068]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fjlm.kulturhotell.se%2Ffiles%2Foriginal%2F5992ab472a511a984234f9ac93c45816.jpg)
+
+["Från Frösön mot Östersund", 1903. Jamtli, Public Domain] (http://data.europeana.eu/item/76/jlm_item_159304)
+
+[Chapter 16 (2nd book)](https://archive.org/details/furtheradventure00lage/page/267/mode/2up)
+
+[Kapitel 46](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/368/etext)
+```
+# Sånfjällets nationalpark
+```
+- center: [62.3, 13.583333]
+- zoom: 11
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16000300029996%2Fnormal%2F1.jpg)
+
+["Sånfjället", Pål-Nils Nilsson, 1970s. Riksantikvarieämbetet, CC BY] (http://data.europeana.eu/item/91622/raa_kmb_16000300029996)
+
+[Chapter 17 (2nd book)](https://archive.org/details/furtheradventure00lage/page/273/mode/2up)
+
+[Kapitel 47](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/389/etext)
+```
+# Klarälven
+```
+- center: [60.751003, 12.773413]
+- zoom: 10
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022wb18kBwqZ%3Fdimension%3D1200x1200)
+
+["Sandgrundsudden plåtad från Klara", Dan Gunner, 1949. Värmlands museum, Public Domain] (http://data.europeana.eu/item/75/S_VLM_photo_409_152_61)
+
+[Chapter 18 (2nd book)](https://archive.org/details/furtheradventure00lage/page/288/mode/2up)
+
+[Kapitel 48](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/401/etext)
+```
+# Fryken
+```
+- center: [59.728023, 13.169861]
+- zoom: 11
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16001000324710%2Fnormal%2F1.jpg)
+
+["Fryken", AB Almquist & Göster, 1920-39. Riksantikvarieämbetet, Public Domain] (http://data.europeana.eu/item/91622/raa_kmb_16001000324710)
+
+[Chapter 18 (2nd book)](https://archive.org/details/furtheradventure00lage/page/288/mode/2up)
+
+[Kapitel 48](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/401/etext)
+```
+# Mårbacka
+```
+- center: [59.780912, 13.233239]
+- zoom: 15
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F032sAYBPkESa%3Fdimension%3D1200x1200)
+
+["Resa i Dalarna och Värmland", Alfred Andersson, 1952. Bohusläns museum, Public Domain] (http://data.europeana.eu/item/916105/bhm_photo_UMFA53202_0616)
+
+[Kapitel 49](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/410/etext)
+```
+# Väderöarna
+```
+- center: [58.577363, 11.067444]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F042sAY4rG5Tu%3Fdimension%3D1200x1200)
+
+["Väderöbods Fyrplats", E Almqvist, 1910-30. Bohusläns museum, Public Domain] (http://data.europeana.eu/item/916105/bhm_photo_UMFA53179_0095)
+
+[Chapter 19 (2nd book)](https://archive.org/details/furtheradventure00lage/page/305/mode/2up)
+
+[Kapitel 50](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/423/etext)
+```
+# Marstrand
+```
+- center: [57.88845, 11.596745]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F012uP2NzMvjm%3Fdimension%3D1200x1200)
+
+["Marstrand", 1934. Sjöhistoriska museet, Public Domain] (http://data.europeana.eu/item/916109/smm_sm_photo_Fo91116A)
+
+[Kapitel 51](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/433/etext)
+```
+# Nääs Slöjdseminariet
+```
+- center: [57.816412, 12.388698]
+- zoom: 15
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F012uNWhz4xfN%3Fdimension%3D600x600)
+
+["Nääs slöjdseminarium". Vänersborgs museum, CC BY-SA] (http://data.europeana.eu/item/916106/vbg_photo_VMO07276)
+
+[Kapitel 52](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/443/etext)
+```
+# Söderåsens nationalpark
+```
+- center: [56.039015, 13.252528]
+- zoom: 13
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F032yhzABercX%3Fdimension%3D1200x1200)
+
+["Vy i Torsåkerstrakten", Mårten Sjöbeck, 1937-38. Länsmuseet Gävleborg, Public Domain] (http://data.europeana.eu/item/916124/S_XLM_photo_XLMC88_2908)
+
+[Chapter 20 (2nd book)](https://archive.org/details/furtheradventure00lage/page/316/mode/2up)
+
+[Kapitel 53](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/470/etext)
+```
+# Bosjökloster
+```
+- center: [55.878669, 13.519789]
+- zoom: 14
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fcarlotta.malmo.se%2Fcarlotta-mmus%2Fweb%2Fimage%2Fzoom%2F996577%2FBJ%2B002057.jpg)
+
+["Bosjökloster", Berndt Johnsson. Malmö museer, CC BY-SA] (http://data.europeana.eu/item/91672/MM_foto_604746)
+
+[Chapter 20 (2nd book)](https://archive.org/details/furtheradventure00lage/page/316/mode/2up)
+
+[Kapitel 53](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/470/etext)
+```
+# Smygehuk
+```
+- center: [55.338452, 13.359804]
+- zoom: 14
+```
+![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16001000021030%2Fnormal%2F1.jpg)
+
+["Smygehuk", Bengt A Lundberg, 2007. Riksantikvarieämbetet, CC BY] (http://data.europeana.eu/item/91622/raa_kmb_16001000021030)
+
+[Chapter 22 (2nd book)](https://archive.org/details/furtheradventure00lage/page/336/mode/2up)
+
+[Kapitel 55](https://litteraturbanken.se/forfattare/LagerlofS/titlar/NilsHolgersson2/sida/484/etext)
+</script>
+</body></html>
