@@ -38,6 +38,7 @@
 
   <script>
     var resizePID;
+    var map;
 
     function clearResize() {
       clearTimeout(resizePID);
@@ -115,7 +116,7 @@
         var seq = O.Triggers.Sequential();
 
         var baseurl = this.baseurl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-        var map = this.map = L.map('map').setView([0, 0.0], 4);
+        map = this.map = L.map('map').setView([0, 0.0], 4);
         var basemap = this.basemap = L.tileLayer(baseurl, {
           attribution: 'Map data &copy; <a href="http://openstreetmap.org/">OpenStreetMap</a> contributors.'
         }).addTo(map);
@@ -188,7 +189,7 @@
         }
 
         this.story.go(this.seq.current());
-        setTimeout(function() { adjustSlides(); }, 500);
+        setTimeout(function() { adjustSlides(); }, 700);
       },
 
       changeSlide: function(n) {
@@ -196,6 +197,67 @@
       }
     });
   </script>
+
+<script>
+L.circleMarker([55.427362, 13.470978], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([55.678376, 13.596734], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([55.854196, 14.135317], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([55.686336, 13.635751], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([55.501575, 14.23096], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.301364, 12.457434], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.000505, 14.001807], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.029394, 14.156678], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.085386, 14.349406], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.067356, 14.592428], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.210434, 15.276023], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.161224, 15.5869], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.591062, 16.330688], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.238075, 16.452895], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.466667, 16.5], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.87054, 16.64346], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.312591, 18.063184], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.6348, 18.29484], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.757716, 16.636976], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.833877, 13.941042], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.679421, 14.080703], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.782614, 14.161788], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.790414, 14.275578], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([58.353267, 14.827608], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([58.333333, 14.65], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([58.450805, 14.891354], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([58.587745, 16.192421], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([58.660537, 16.399033], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.275263, 15.213411], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.25, 15.75], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.446679, 17.466347], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.433698, 15.591502], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.594349, 15.228221], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([60.60097, 17.447487], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([60.600216, 15.616582], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([60.889025, 15.123373], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.858564, 17.638927], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.2844, 18.57459], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.324016, 18.101636], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([60.568607, 17.448913], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([61.799132, 16.553382], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([62.390811, 17.306927], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([62.403517, 17.460407], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([63.154, 17.238], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([65.333731, 16.516169], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([67.173653, 20.654516], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([67.8558, 20.225282], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([63.176683, 14.636068], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([62.3, 13.583333], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([60.751003, 12.773413], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.728023, 13.169861], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([59.780912, 13.233239], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([58.577363, 11.067444], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.88845, 11.596745], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([57.816412, 12.388698], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([56.016667, 13.216667], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([55.878669, 13.519789], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+L.circleMarker([55.338452, 13.359804], {color: '#FF7373', fillColor: '#FF7373', fillOpacity: 1, radius: 5, clickable: false}).addTo(map);
+</script>
 
 <script id="md_template" type="text/template">```
 -title: "Nils Holgersson platser"
@@ -385,7 +447,7 @@ A map created by Larissa Borck & Albin Larsson.
 # Kalmarsund
 ```
 - center: [56.591062, 16.330688]
-- zoom: 13
+- zoom: 12
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F022wZW2zuC5r%3Fdimension%3D1200x1200)
 
@@ -410,8 +472,8 @@ A map created by Larissa Borck & Albin Larsson.
 ```
 # Stora Alvaret
 ```
-- center: [56.466553, 16.558679]
-- zoom: 13
+- center: [56.466667, 16.5]
+- zoom: 11
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fkmb.raa.se%2Fcocoon%2Fbild%2Fraa-image%2F16001000040184%2Fnormal%2F1.jpg)
 
@@ -604,7 +666,7 @@ A map created by Larissa Borck & Albin Larsson.
 # Hjälmaren
 ```
 - center: [59.25, 15.75]
-- zoom: 12
+- zoom: 11
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0331yTemoDXf%3Fdimension%3D1200x1200)
 
@@ -617,7 +679,7 @@ A map created by Larissa Borck & Albin Larsson.
 # Mälaren
 ```
 - center: [59.446679, 17.466347]
-- zoom: 13
+- zoom: 11
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F0231yTYHE2KK%3Fdimension%3D1200x1200)
 
@@ -698,7 +760,7 @@ A map created by Larissa Borck & Albin Larsson.
 # Stockholm Archipelago
 ```
 - center: [59.2844, 18.57459]
-- zoom: 12
+- zoom: 11
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=https%3A%2F%2Fmm.dimu.org%2Fimage%2F032yhzGq7dtA%3Fdimension%3D1200x1200)
 
@@ -775,8 +837,8 @@ A map created by Larissa Borck & Albin Larsson.
 ```
 # Ångermanland
 ```
-- center: [62.634211, 17.944589]
-- zoom: 10
+- center: [63.154, 17.238]
+- zoom: 9
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F022sBY4HUPZ6%3Fdimension%3D1200x1200)
 
@@ -925,7 +987,7 @@ A map created by Larissa Borck & Albin Larsson.
 ```
 # Söderåsens nationalpark
 ```
-- center: [56.039015, 13.252528]
+- center: [56.016667, 13.216667]
 - zoom: 13
 ```
 ![](https://api.europeana.eu/api/v2/thumbnail-by-url.json?size=w400&type=IMAGE&uri=http%3A%2F%2Fmm.dimu.org%2Fimage%2F032yhzABercX%3Fdimension%3D1200x1200)
