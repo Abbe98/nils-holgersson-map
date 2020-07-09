@@ -188,6 +188,7 @@
         }
 
         this.story.go(this.seq.current());
+        setTimeout(function() { adjustSlides(); }, 200);
       },
 
       changeSlide: function(n) {
